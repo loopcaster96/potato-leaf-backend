@@ -1,0 +1,32 @@
+{
+  "dataset": "PlantVillage",
+  "task": "clasificacion_enfermedades_papa",
+  "validation": {
+    "method": "StratifiedKFold",
+    "n_folds": 5,
+    "scoring": "macro (accuracy, precision, recall, f1)"
+  },
+  "models": {
+    "CNN": {
+      "accuracy": 0.9906,
+      "accuracy_std": 0.0026,
+      "precision": 0.9907,
+      "recall": 0.9906,
+      "f1_score": 0.9906
+    },
+    "MLP": {
+      "accuracy": 0.95,
+      "accuracy_std": 0.0102,
+      "precision": 0.9505,
+      "recall": 0.95,
+      "f1_score": 0.95
+    },
+    "Regresion_Logistica": {
+      "accuracy": 0.9062,
+      "accuracy_std": 0.0121,
+      "precision": 0.9084,
+      "recall": 0.9062,
+      "f1_score": 0.9068
+    }
+  }
+}

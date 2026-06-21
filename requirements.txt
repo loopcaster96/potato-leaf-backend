@@ -1,0 +1,60 @@
+# --------------------------------------------------------------------
+# Framework Web Asíncrono y Servidor ASGI
+# --------------------------------------------------------------------
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+python-multipart==0.0.20
+
+# --------------------------------------------------------------------
+# Configuración y Validación de Datos
+# --------------------------------------------------------------------
+pydantic==2.10.4
+pydantic-settings==2.7.1
+email-validator==2.2.0
+
+# --------------------------------------------------------------------
+# Base de Datos: PostgreSQL Asíncrono (SQLAlchemy 2.0)
+# --------------------------------------------------------------------
+sqlalchemy==2.0.36
+asyncpg==0.30.0
+
+# --------------------------------------------------------------------
+# Seguridad: Hashing de Contraseñas y JWT
+# --------------------------------------------------------------------
+passlib[bcrypt]==1.7.4
+bcrypt==4.2.1
+python-jose[cryptography]==3.3.0
+
+# --------------------------------------------------------------------
+# Autenticación Federada: Google OAuth2
+# --------------------------------------------------------------------
+google-auth==2.37.0
+
+# --------------------------------------------------------------------
+# Almacenamiento de Objetos: S3 / Cloudflare R2
+# --------------------------------------------------------------------
+aioboto3==13.3.0
+
+# --------------------------------------------------------------------
+# Machine Learning Local: CNN e Inferencia (Grad-CAM)
+# --------------------------------------------------------------------
+tensorflow-cpu==2.18.0
+numpy==1.26.4
+Pillow==11.0.0
+
+# --------------------------------------------------------------------
+# Capa de Abstracción Unificada de LLM (reemplaza SDKs propietarios)
+# --------------------------------------------------------------------
+# LiteLLM provee una interfaz estándar OpenAI-compatible hacia todos
+# los proveedores externos. Los SDKs propietarios se retienen como
+# dependencias transitivas para compatibilidad con llm_providers.py.
+litellm==1.55.0
+
+# --------------------------------------------------------------------
+# SDKs Nativos de Proveedores LLM (compatibilidad con llm_providers.py)
+# --------------------------------------------------------------------
+google-genai==0.8.0
+openai==1.58.1
+anthropic==0.40.0
+groq==0.13.1
+azure-ai-inference==1.0.0b6
