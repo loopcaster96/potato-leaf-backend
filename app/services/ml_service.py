@@ -39,7 +39,8 @@ class MLInferenceService:
         self.class_names = class_names
         self.input_size = input_size
         self.model: tf.keras.Model | None = None
-        self.grad_model: tf.keras.Model | None = None
+        self.sub_model: tf.keras.Model | None = None
+        self.classifier_layers: list[tf.keras.layers.Layer] = []
         self.last_conv_layer_name: str | None = None
 
     def load_model(self) -> None:
@@ -76,10 +77,13 @@ class MLInferenceService:
         self.last_conv_layer_name = self._resolve_last_conv_layer()
         last_conv_layer = self.model.get_layer(self.last_conv_layer_name)
 
-        self.grad_model = tf.keras.models.Model(
+        self.sub_model = tf.keras.models.Model(
             inputs=self.model.inputs,
-            outputs=[last_conv_layer.output, self.model.output],
+            outputs=last_conv_layer.output,
         )
+        
+        layer_idx = self.model.layers.index(last_conv_layer)
+        self.classifier_layers = self.model.layers[layer_idx + 1:]
         logger.info(
             "Modelo cargado exitosamente. Última capa convolucional detectada: %s",
             self.last_conv_layer_name,
@@ -171,11 +175,18 @@ class MLInferenceService:
         normaliza el resultado al rango [0.0, 1.0] para su consumo directo
         por el frontend como una superposición de calor (heatmap).
         """
-        if self.grad_model is None:
-            raise RuntimeError("El grad_model no ha sido inicializado.")
+        if self.sub_model is None:
+            raise RuntimeError("El sub_model no ha sido inicializado.")
 
         with tf.GradientTape() as tape:
-            conv_outputs, predictions = self.grad_model(image_tensor, training=False)
+            conv_outputs = self.sub_model(image_tensor, training=False)
+            tape.watch(conv_outputs)
+            
+            x = conv_outputs
+            for layer in self.classifier_layers:
+                x = layer(x, training=False)
+            
+            predictions = x
             class_channel = predictions[:, predicted_index]
 
         gradients = tape.gradient(class_channel, conv_outputs)
