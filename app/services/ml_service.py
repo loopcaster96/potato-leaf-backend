@@ -230,9 +230,10 @@ class MLInferenceService:
         heatmap_resized = tf.image.resize(
             heatmap_expanded, 
             target_size, 
-            method=tf.image.ResizeMethod.BILINEAR
+            method=tf.image.ResizeMethod.BICUBIC
         )
         heatmap_final = tf.squeeze(heatmap_resized).numpy()
+        heatmap_final = np.clip(heatmap_final, 0.0, 1.0) # Evitar desbordes de interpolación bicúbica
 
         # 1. Generar Colormap Jet nativo usando NumPy (sin dependencias extra)
         x_vals = np.linspace(0, 1, 256)
