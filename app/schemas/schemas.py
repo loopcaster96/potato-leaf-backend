@@ -164,6 +164,8 @@ class QueryHistoryDetailResponse(BaseModel):
 
     id: uuid.UUID
     image_url: str
+    heatmap_jet_url: str | None = None
+    heatmap_overlay_url: str | None = None
     diagnostic_result: DiagnosticResultSchema
     confidence_score: float
     location_lat: float
