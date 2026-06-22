@@ -154,7 +154,7 @@ class MLInferenceService:
 
     def compute_grad_cam(
         self, image_tensor: tf.Tensor, predicted_index: int
-    ) -> str:
+    ) -> tuple[str, str]:
         """
         Calcula el mapa de activación Grad-CAM puro en TensorFlow para la
         clase predicha, interceptando los gradientes de la última capa
@@ -222,27 +222,36 @@ class MLInferenceService:
         )
         heatmap_final = tf.squeeze(heatmap_resized).numpy()
 
-        # Generar un mapa de calor RGBA (Amarillo -> Naranja -> Rojo)
-        # R = 255 (siempre saturado en rojo)
-        # G = Decae hacia 0 a medida que aumenta la intensidad (R+G = Amarillo, R solo = Rojo)
-        # B = 0
-        # A = Opacidad ligada a la intensidad (totalmente transparente donde hay 0)
-        r = np.full_like(heatmap_final, 255, dtype=np.uint8)
-        g = np.clip((1.0 - heatmap_final) * 2.0 * 255.0, 0, 255).astype(np.uint8)
-        b = np.zeros_like(heatmap_final, dtype=np.uint8)
-        
-        # Opacidad máxima del 75% (190/255) para dejar ver la hoja original de fondo
-        a = (heatmap_final * 190).astype(np.uint8)
+        # 1. Generar Colormap Jet nativo usando NumPy (sin dependencias extra)
+        x_vals = np.linspace(0, 1, 256)
+        r_pal = np.clip(1.5 - np.abs(4 * x_vals - 3), 0, 1)
+        g_pal = np.clip(1.5 - np.abs(4 * x_vals - 2), 0, 1)
+        b_pal = np.clip(1.5 - np.abs(4 * x_vals - 1), 0, 1)
+        jet_palette = (np.stack([r_pal, g_pal, b_pal], axis=-1) * 255).astype(np.uint8)
 
-        rgba_image = np.stack([r, g, b, a], axis=-1)
-        pil_img = Image.fromarray(rgba_image, mode="RGBA")
+        indices = (heatmap_final * 255).astype(np.uint8)
+        heatmap_colored = jet_palette[indices] # [224, 224, 3] RGB
 
-        # Convertir a Base64 PNG
-        buffered = io.BytesIO()
-        pil_img.save(buffered, format="PNG")
-        img_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
+        # Convertir Jet a Base64 JPEG
+        pil_jet = Image.fromarray(heatmap_colored, mode="RGB")
+        buffered_jet = io.BytesIO()
+        pil_jet.save(buffered_jet, format="JPEG", quality=85)
+        jet_b64 = base64.b64encode(buffered_jet.getvalue()).decode("utf-8")
+
+        # 2. Generar el Overlay (mezcla de la imagen original y el heatmap)
+        # image_tensor tiene valores en [0, 255], lo normalizamos a [0, 1]
+        img_normalized = image_tensor[0].numpy() / 255.0
+        heatmap_colored_norm = heatmap_colored.astype(np.float32) / 255.0
         
-        return f"data:image/png;base64,{img_str}"
+        overlay = np.clip((img_normalized * 0.6 + heatmap_colored_norm * 0.4), 0, 1)
+        overlay_uint8 = (overlay * 255).astype(np.uint8)
+
+        pil_overlay = Image.fromarray(overlay_uint8, mode="RGB")
+        buffered_overlay = io.BytesIO()
+        pil_overlay.save(buffered_overlay, format="JPEG", quality=85)
+        overlay_b64 = base64.b64encode(buffered_overlay.getvalue()).decode("utf-8")
+        
+        return f"data:image/jpeg;base64,{jet_b64}", f"data:image/jpeg;base64,{overlay_b64}"
 
 
 def build_ml_service() -> MLInferenceService:

@@ -126,7 +126,8 @@ class DiagnoseResponse(BaseModel):
     diagnostic_result: DiagnosticResultSchema
     confidence_score: float = Field(..., ge=0.0, le=1.0)
     probabilities: dict[str, float]
-    heatmap_image: str = Field(..., description="Imagen PNG transparente codificada en Base64")
+    heatmap_jet: str = Field(..., description="Mapa de calor puro (Jet colormap) en Base64")
+    heatmap_overlay: str = Field(..., description="Mapa de calor superpuesto a la imagen en Base64")
     image_url: str
     location_lat: float
     location_lon: float
