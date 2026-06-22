@@ -118,7 +118,9 @@ class MLInferenceService:
         pil_image = pil_image.resize(
             (self.input_size, self.input_size), Image.Resampling.BILINEAR
         )
-        image_array = np.asarray(pil_image, dtype=np.float32) / 255.0
+        image_array = np.asarray(pil_image, dtype=np.float32)
+        # NOTA: No se divide por 255.0. Las arquitecturas modernas en Keras
+        # (como EfficientNet) incluyen internamente su propia capa de Rescaling.
         image_tensor = tf.convert_to_tensor(image_array, dtype=tf.float32)
         image_tensor = tf.expand_dims(image_tensor, axis=0)
         return image_tensor
@@ -168,24 +170,18 @@ class MLInferenceService:
         if self.model is None or self.last_conv_layer_name is None:
             raise RuntimeError("El modelo no ha sido inicializado.")
 
+        # Construir un sub-modelo que exponga simultáneamente la salida
+        # de la capa convolucional y la predicción final.
+        grad_model = tf.keras.models.Model(
+            inputs=[self.model.inputs],
+            outputs=[
+                self.model.get_layer(self.last_conv_layer_name).output,
+                self.model.output,
+            ],
+        )
+
         with tf.GradientTape() as tape:
-            x = image_tensor
-            conv_outputs = None
-            
-            for layer in self.model.layers:
-                if isinstance(layer, tf.keras.layers.InputLayer):
-                    continue
-                
-                x = layer(x, training=False)
-                
-                if layer.name == self.last_conv_layer_name:
-                    conv_outputs = x
-                    tape.watch(conv_outputs)
-            
-            if conv_outputs is None:
-                raise RuntimeError(f"No se encontró la capa convolucional {self.last_conv_layer_name} durante el forward pass.")
-            
-            predictions = x
+            conv_outputs, predictions = grad_model(image_tensor, training=False)
             class_channel = predictions[:, predicted_index]
 
         gradients = tape.gradient(class_channel, conv_outputs)
