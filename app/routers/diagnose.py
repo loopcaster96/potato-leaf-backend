@@ -46,7 +46,6 @@ from app.models.database_models import (
 )
 from app.schemas.schemas import (
     DiagnoseResponse,
-    GradCamMatrix,
     QueryHistoryDetailResponse,
     StreamReportContext,
 )
