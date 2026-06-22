@@ -140,7 +140,13 @@ class MLInferenceService:
             raise RuntimeError("El modelo CNN no ha sido cargado en memoria.")
 
         predictions = self.model(image_tensor, training=False)
-        probabilities = tf.nn.softmax(predictions[0]).numpy()
+        pred_array = predictions[0].numpy()
+        
+        # Evitar "doble softmax" si el modelo ya entrega probabilidades (suma ~ 1.0)
+        if np.isclose(np.sum(pred_array), 1.0, atol=1e-3):
+            probabilities = pred_array
+        else:
+            probabilities = tf.nn.softmax(pred_array).numpy()
 
         predicted_index = int(np.argmax(probabilities))
         predicted_label = self.class_names[predicted_index]
