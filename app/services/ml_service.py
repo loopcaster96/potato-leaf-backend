@@ -211,8 +211,20 @@ class MLInferenceService:
         if max_value > 0:
             heatmap = heatmap / max_value
 
-        heatmap_array = heatmap.numpy().astype(float)
-        return [[round(float(value), 6) for value in row] for row in heatmap_array]
+        # Escalar el heatmap nativamente con TensorFlow para devolver 
+        # una matriz ampliada (224x224), a petición del cliente web.
+        heatmap_expanded = tf.expand_dims(tf.expand_dims(heatmap, 0), -1)
+        heatmap_resized = tf.image.resize(
+            heatmap_expanded, 
+            (self.input_size, self.input_size), 
+            method=tf.image.ResizeMethod.BILINEAR
+        )
+        heatmap_final = tf.squeeze(heatmap_resized)
+
+        heatmap_array = heatmap_final.numpy().astype(float)
+        # Se reduce la precisión a 4 decimales para no inflar excesivamente
+        # el peso en KB del JSON de respuesta.
+        return [[round(float(value), 4) for value in row] for row in heatmap_array]
 
 
 def build_ml_service() -> MLInferenceService:
